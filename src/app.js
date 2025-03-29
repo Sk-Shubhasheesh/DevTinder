@@ -2,19 +2,15 @@ const express = require('express');
 
 const app = express();
 
-// request handeling
+app.use("/user", (req, res, next)=>{
+    console.log("Handling the route user !");
+    // res.send("Route Handler 1")
+    next()
 
-app.use("/",(req, res)=>{
-   res.send("Hello from the server")
-
+}, (req, res)=>{
+    console.log("Handling the route user 2!");
+    res.send("Route Handler 2")
 })
-
-// responce particuaar route
-app.use("/test", (req, res)=>{
-    res.send("Hello from the test route")
- 
- })
-
 
 app.listen(3000, ()=>{
     console.log("Server is successfully listening on port 3000...");
