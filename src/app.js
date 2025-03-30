@@ -1,18 +1,17 @@
 const express = require('express');
-
+const connectDB =  require("./congif/database")
 const app = express();
 
-app.use("/user", (req, res, next)=>{
-    console.log("Handling the route user !");
-    // res.send("Route Handler 1")
-    next()
+connectDB().then(()=>{
+    console.log("Database connection established....");
+    app.listen(3000, ()=>{
+        console.log("Server is successfully listening on port 3000...");
+        
+    });
 
-}, (req, res)=>{
-    console.log("Handling the route user 2!");
-    res.send("Route Handler 2")
+}).catch(err=>{
+    console.error("Database cannot be connected due to some problem");
 })
 
-app.listen(3000, ()=>{
-    console.log("Server is successfully listening on port 3000...");
-    
-});
+
+
