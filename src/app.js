@@ -100,6 +100,30 @@ app.patch("/user", async (req, res) => {
 
 });
 
+
+
+// login APi
+app.post("/login", async(req, res)=>{
+    try {
+        const { emailId, password } = req.body;
+        const user = await User.findOne({ emailId: emailId });
+        
+        if(!user){
+            throw new Error("EmailID is not Present")
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if(isPasswordValid){
+            res.send("LOGIN Successful!!")
+        } else{
+            throw new Error("Invalid Password!!");
+        }
+        
+    } catch (error) {
+        res.status(404).send("ERROR : " + error.message); // Fixed `err` to `error`
+    }
+});
+
 connectDB().then(() => {
     console.log("Database connection established....");
     app.listen(3000, () => {
