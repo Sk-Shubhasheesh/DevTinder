@@ -2,16 +2,21 @@ const express = require('express');
 const connectDB = require("./congif/database");
 const app = express();
 const User = require('./models/user');
-
+const { validateSignUpData } = require("./utils/validation")
 app.use(express.json());
 
 app.post("/signup", async (req, res) => {
-    const user = new User(req.body);
     try {
+        // validation of data
+        validateSignUpData(req);
+        // Encrypt the password
+
+        const user = new User(req.body);
+
         await user.save();
         res.send("User Added successfully!");
     } catch (err) {
-        res.status(400).send("Error saving the user:" + err.message);
+        res.status(400).send("ERROR : " + err.message);
     }
 
 })
@@ -74,7 +79,7 @@ app.patch("/user", async (req, res) => {
         if (!isUpdateAllowed) {
             throw new Error("Update not allowed");
         }
-        if(data?.skills.length > 10) {
+        if (data?.skills.length > 10) {
             throw new Error("Skills cannot be more than 10");
         }
         await User.findByIdAndUpdate({ _id: userId }, data, { runValidators: true });
