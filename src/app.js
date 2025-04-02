@@ -2,24 +2,31 @@ const express = require('express');
 const connectDB = require("./congif/database");
 const app = express();
 const User = require('./models/user');
-const { validateSignUpData } = require("./utils/validation")
-const bcrypt = require('bcrypt')
+const { validateSignUpData } = require("./utils/validation");
+const bcrypt = require('bcrypt');
+const cookieParser = require("cookie-parser");
+const jwt = require('jsonwebtoken');
+
+const {userAuth} = require('./middlewares/auth');
 
 app.use(express.json());
+app.use(cookieParser());
 
+
+// Signup API
 app.post("/signup", async (req, res) => {
     try {
         // validation of data
         validateSignUpData(req);
 
-        const { firstName,lastName,emailId, password } = req.body
+        const { firstName, lastName, emailId, password } = req.body
         // Encrypt the password
         const passwordHash = await bcrypt.hash(password, 10)
         const user = new User({
-            firstName, 
-            lastName, 
-            emailId, 
-            password:passwordHash,
+            firstName,
+            lastName,
+            emailId,
+            password: passwordHash,
         });
 
         await user.save();
@@ -31,98 +38,51 @@ app.post("/signup", async (req, res) => {
 })
 
 
-
-// Get user by email
-app.get("/user", async (req, res) => {
-    const userEmail = req.body.emailId;
-    try {
-        const users = await User.find({ emailId: userEmail });
-        if (users.length === 0) {
-            res.status(404).send("User not found");
-
-        } else {
-            res.send(users);
-
-        }
-
-
-    } catch {
-        res.status(400).send("Something went wrong:" + err.message);
-    }
-});
-
-// feed API - get all the user from the database
-app.get("/feed", async (req, res) => {
-    try {
-        const users = await User.find({});
-        res.send(users);
-    } catch (error) {
-
-    }
-
-});
-
-// delete user
-app.delete("/user", async (req, res) => {
-    const userId = req.body.userId;
-    try {
-        // const user = await User.findByIdAndDelete({_id: userId});
-        const user = await User.findByIdAndDelete(userId);
-        res.send("User deleted successfully");
-
-    } catch {
-        res.status(400).send("Something went wrong:" + err.message);
-    }
-
-});
-
-// update user
-app.patch("/user", async (req, res) => {
-    const userId = req.body.userId;
-    const data = req.body;
-
-    try {
-        const ALLOWED_UPDATES = ["userId", "photoUrl", "about", "gender", "age", "skills"];
-        const isUpdateAllowed = Object.keys(data).every((k) => ALLOWED_UPDATES.includes(k));
-
-        if (!isUpdateAllowed) {
-            throw new Error("Update not allowed");
-        }
-        if (data?.skills.length > 10) {
-            throw new Error("Skills cannot be more than 10");
-        }
-        await User.findByIdAndUpdate({ _id: userId }, data, { runValidators: true });
-        res.send("User Updated Successfully!!");
-
-    } catch {
-        res.status(400).send("Something went wrong:" + err.message);
-    }
-
-});
-
-
-
-// login APi
-app.post("/login", async(req, res)=>{
+// login API
+app.post("/login", async (req, res) => {
     try {
         const { emailId, password } = req.body;
         const user = await User.findOne({ emailId: emailId });
-        
-        if(!user){
+
+        if (!user) {
             throw new Error("EmailID is not Present")
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
-        if(isPasswordValid){
+
+        if (isPasswordValid) {
+
+            // Create a JWT Token
+            const token = await jwt.sign({ _id: user._id }, "DEV@Tinder$790");
+
+            // Add the token to cookie and send the response back to the user
+            res.cookie("token", token);
+
             res.send("LOGIN Successful!!")
-        } else{
+        } else {
             throw new Error("Invalid Password!!");
         }
-        
+
     } catch (error) {
         res.status(404).send("ERROR : " + error.message); // Fixed `err` to `error`
     }
 });
+
+
+// GET Profile APi
+app.get("/profile",userAuth, async (req, res) => {
+    try {
+        const user = req.user;
+        res.send(user);
+
+    } catch (error) {
+        res.status(404).send("ERROR : " + error.message);
+    }
+
+
+
+})
+
 
 connectDB().then(() => {
     console.log("Database connection established....");
