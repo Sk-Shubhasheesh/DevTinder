@@ -69,6 +69,11 @@ userRouter.get("/feed", userAuth, async (req, res) => {
         // 2. ignored people
         // 3. already send the connection request
 
+        const page = parseInt(req.query.page) || 1;
+        let limit = parseInt(req.query.limit) || 10;
+        limit = limit > 50 ? 50: limit;
+        const skip = (page-1)*limit;
+
         const loggedInUser = req.user;
         // Find all connection request that i have send + received
         const connectionRequests = await ConnectionRequest.find({
@@ -89,7 +94,7 @@ userRouter.get("/feed", userAuth, async (req, res) => {
                 { _id: { $nin: Array.from(hideUsersFromFeed) } },
                 { _id: { $ne: loggedInUser._id } }
             ]
-        }).select("firstName lastName photoUrl about skills");
+        }).select("firstName lastName photoUrl about skills").skip(skip).limit(limit);
 
         res.send(users);
 
@@ -101,4 +106,8 @@ userRouter.get("/feed", userAuth, async (req, res) => {
     }
 })
 
+
+// pagination
+// feed?page=1&limit=10 => first 10 user 1-10 => skip(0).limit(10)
+// feed?page=2&limit=10 => user 11-20 => skip(10).limit(10)
 module.exports = userRouter;
