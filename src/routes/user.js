@@ -96,7 +96,9 @@ userRouter.get("/feed", userAuth, async (req, res) => {
             ]
         }).select("firstName lastName photoUrl about skills").skip(skip).limit(limit);
 
-        res.send(users);
+        res.json({
+            data: users
+        });
 
 
 
